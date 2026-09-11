@@ -49,3 +49,8 @@ pylint==3.0.3
 
 # Documentation
 python-multipart==0.0.6  # For file uploads in Swagger UI
+
+fastapi
+uvicorn
+pillow
+python-multipart
