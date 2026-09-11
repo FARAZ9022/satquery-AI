@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SatQuery AI Platform</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        :root {
+            --bg-main: #0b0f19;
+            --card-bg: #131b2e;
+            --card-border: #23314d;
+            --accent-green: #10b981;
+            --accent-building: #ff007f; /* Neon Pink Magenta - Ultra High Contrast */
+            --accent-water: #06b6d4;   /* Cyan Blue */
+            --accent-barren: #d97706;  /* Earthy Orange-Brown */
+            --text-main: #ffffff;
+            --text-muted: #94a3b8;
+            --accent-blue: #38bdf8;
+        }
+
+        * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; padding: 0; }
+        body { background-color: var(--bg-main); color: var(--text-main); padding: 20px 10px; }
+
+        .header { text-align: center; margin-bottom: 20px; }
+        .brand-badge { background: rgba(56, 189, 248, 0.15); color: var(--accent-blue); padding: 6px 16px; border-radius: 20px; font-size: 0.85rem; font-weight: 700; display: inline-block; margin-bottom: 8px; border: 1px solid rgba(56, 189, 248, 0.3); }
+        .header h1 { font-size: 2.2rem; color: #ffffff; font-weight: 800; }
+        .header h1 span { color: var(--accent-blue); }
+
+        .dashboard-grid { max-width: 1400px; margin: 0 auto; display: grid; grid-template-columns: 1.25fr 0.75fr; gap: 20px; }
+        .card { background: var(--card-bg); border: 1px solid var(--card-border); padding: 20px; border-radius: 18px; box-shadow: 0 12px 35px rgba(0,0,0,0.4); }
+        
+        h2 { font-size: 1.15rem; font-weight: 700; color: #ffffff; margin-bottom: 15px; border-bottom: 1px solid var(--card-border); padding-bottom: 10px; display: flex; align-items: center; justify-content: space-between; }
+
+        .workflow-row { display: flex; gap: 8px; margin-bottom: 14px; }
+        .wf-btn { flex: 1; padding: 10px; background: #1a243b; border: 1px solid var(--card-border); color: var(--text-muted); border-radius: 8px; font-size: 0.8rem; font-weight: 700; cursor: pointer; text-align: center; }
+        .wf-btn.active { background: #2563eb; color: #ffffff; border-color: #3b82f6; }
+
+        .upload-row { display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 15px; }
+        .upload-row.two-cols { grid-template-columns: 1fr 1fr; }
+
+        .file-label { padding: 12px; background: #1a243b; border: 2px dashed #334155; border-radius: 10px; text-align: center; cursor: pointer; font-size: 0.85rem; color: #e2e8f0; font-weight: 500; display: block; }
+        .file-label:hover { border-color: var(--accent-blue); }
+        input[type="file"] { display: none; }
+        
+        .btn-analyze { width: 100%; padding: 13px; background: #2563eb; color: #ffffff; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 0.92rem; margin-top: 5px; }
+        .btn-analyze:hover { background: #1d4ed8; }
+
+        /* VIEWPORT LAYOUT */
+        .viewer-container { display: grid; grid-template-columns: 1fr; gap: 12px; margin-bottom: 15px; }
+        .viewer-container.dual-mode { grid-template-columns: 1fr 1fr; }
+
+        .image-viewer { position: relative; width: 100%; height: 350px; background: #060911; border-radius: 12px; border: 1px solid var(--card-border); overflow: hidden; display: flex; align-items: center; justify-content: center; }
+        .image-viewer img, .image-viewer canvas { position: absolute; max-width: 100%; max-height: 100%; object-fit: contain; }
+        .view-tag { position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.75); color: #fff; padding: 4px 8px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; z-index: 20; border: 1px solid rgba(255,255,255,0.2); }
+        
+        #overlayCanvas1 { pointer-events: none; z-index: 10; }
+
+        .tab-group { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 15px; }
+        .tab-btn { flex: 1; min-width: 100px; padding: 9px 10px; border: 1px solid var(--card-border); background: #1a243b; color: #cbd5e1; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer; text-align: center; }
+        .tab-btn:hover, .tab-btn.active { background: #ffffff; color: #000000; font-weight: 700; }
+
+        .analytics-split { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .chart-box { background: #080c14; padding: 12px; border-radius: 12px; height: 210px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--card-border); }
+
+        .progress-list { display: flex; flex-direction: column; gap: 8px; justify-content: center; }
+        .progress-item { font-size: 0.82rem; }
+        .progress-header { display: flex; justify-content: space-between; margin-bottom: 3px; font-weight: 600; color: #f1f5f9; }
+        .progress-bar-bg { width: 100%; height: 8px; background: #1a243b; border-radius: 10px; overflow: hidden; }
+        .progress-bar-fill { height: 100%; width: 0%; transition: width 0.8s ease-in-out; border-radius: 10px; }
+
+        .chat-history { height: 420px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 5px; }
+        .msg { padding: 10px 14px; border-radius: 10px; max-width: 90%; font-size: 0.85rem; line-height: 1.5; }
+        .user { background: #2563eb; color: #ffffff; align-self: flex-end; }
+        .assistant { background: #1a243b; color: #f8fafc; align-self: flex-start; border: 1px solid var(--card-border); }
+        .chat-input-box { display: flex; gap: 8px; margin-top: 12px; }
+        .chat-input-box input { flex: 1; padding: 11px 14px; border-radius: 8px; border: 1px solid var(--card-border); background: #080c14; color: #ffffff; outline: none; font-size: 0.85rem; }
+        .chat-input-box button { padding: 11px 18px; border-radius: 8px; border: none; background: #ffffff; color: #000000; font-weight: 700; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="brand-badge">🛰️ ISRO / SAC Geospatial Copilot</div>
+        <h1>SatQuery <span>AI Engine</span></h1>
+    </div>
+
+    <div class="dashboard-grid">
+        <div class="card">
+            <h2>
+                <span>📸 Satellite Image Viewport</span>
+                <span id="statusBadge" style="font-size: 0.75rem; color: var(--accent-green); background: rgba(16,185,129,0.15); padding: 4px 10px; border-radius: 8px;">Ready</span>
+            </h2>
+
+            <div class="workflow-row">
+                <button class="wf-btn active" id="wfSingle" onclick="selectMode('single')">Single VQA</button>
+                <button class="wf-btn" id="wfBi" onclick="selectMode('bi_temporal')">Bi-Temporal CD (T1 vs T2)</button>
+                <button class="wf-btn" id="wfCross" onclick="selectMode('cross_modal')">Optical-SAR Fusion</button>
+            </div>
+
+            <form id="uploadForm">
+                <div class="upload-row" id="uploadGrid">
+                    <div>
+                        <label for="imageInput1" class="file-label" id="fileLabel1">📁 Select Primary Image (T1 Optical)</label>
+                        <input type="file" id="imageInput1" accept="image/*" required>
+                    </div>
+
+                    <div id="secFileBox" style="display: none;">
+                        <label for="imageInput2" class="file-label" id="fileLabel2" style="border-color: var(--accent-blue);">📁 Select Post-Event Image (T2)</label>
+                        <input type="file" id="imageInput2" accept="image/*">
+                    </div>
+                </div>
+                <button type="submit" class="btn-analyze">Execute Agent Analysis</button>
+            </form>
+
+            <div class="viewer-container" id="viewerContainer">
+                <div class="image-viewer">
+                    <div class="view-tag" id="tag1">T1 Image</div>
+                    <span id="placeholderText1" style="color: var(--text-muted); font-size: 0.85rem;">Upload T1 Image</span>
+                    <img id="satelliteImage1" src="" style="display: none;" alt="T1 View">
+                    <canvas id="overlayCanvas1"></canvas>
+                </div>
+
+                <div class="image-viewer" id="secondaryViewer" style="display: none;">
+                    <div class="view-tag" id="tag2">T2 Image / SAR</div>
+                    <span id="placeholderText2" style="color: var(--text-muted); font-size: 0.85rem;">Upload Secondary Image</span>
+                    <img id="satelliteImage2" src="" style="display: none;" alt="T2 View">
+                </div>
+            </div>
+
+            <div class="tab-group">
+                <button class="tab-btn" onclick="highlightLayer('none')">🚫 Clear Layer</button>
+                <button class="tab-btn" onclick="highlightLayer('vegetation')">🌳 Vegetation</button>
+                <button class="tab-btn" onclick="highlightLayer('buildings')" style="color: var(--accent-building);">🏢 Buildings (Magenta)</button>
+                <button class="tab-btn" onclick="highlightLayer('barren')">🏜️ Barren Soil</button>
+                <button class="tab-btn" onclick="highlightLayer('water')">💧 Water</button>
+            </div>
+
+            <div class="analytics-split">
+                <div class="chart-box"><canvas id="pieChart"></canvas></div>
+                <div class="progress-list">
+                    <div class="progress-item">
+                        <div class="progress-header"><span style="color: var(--accent-green);">Vegetation</span><span id="pctVeg">0%</span></div>
+                        <div class="progress-bar-bg"><div class="progress-bar-fill" id="barVeg" style="background: var(--accent-green);"></div></div>
+                    </div>
+                    <div class="progress-item">
+                        <div class="progress-header"><span style="color: var(--accent-building);">Buildings / Concrete</span><span id="pctBuilding">0%</span></div>
+                        <div class="progress-bar-bg"><div class="progress-bar-fill" id="barBuilding" style="background: var(--accent-building);"></div></div>
+                    </div>
+                    <div class="progress-item">
+                        <div class="progress-header"><span style="color: var(--accent-barren);">Barren Soil</span><span id="pctBarren">0%</span></div>
+                        <div class="progress-bar-bg"><div class="progress-bar-fill" id="barBarren" style="background: var(--accent-barren);"></div></div>
+                    </div>
+                    <div class="progress-item">
+                        <div class="progress-header"><span style="color: var(--accent-water);">Water Bodies</span><span id="pctWater">0%</span></div>
+                        <div class="progress-bar-bg"><div class="progress-bar-fill" id="barWater" style="background: var(--accent-water);"></div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>💬 SatQuery AI Copilot</h2>
+            <div class="chat-history" id="chatHistory">
+                <div class="msg assistant">
+                    <strong>Namaste! Main SatQuery Copilot hoon.</strong><br>
+                    Image upload karke test karein. Water aur Barren soil original accurate algorithm par set hain.
+                </div>
+            </div>
+            
+            <div class="chat-input-box">
+                <input type="text" id="chatInput" placeholder="Poochhein: Buildings ya water kitna hai?">
+                <button onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let pieChartInstance = null;
+        let pixelStats = { vegetation: 0, buildings: 0, barren: 0, water: 0 };
+        let imageLoaded = false;
+        let selectedModality = 'single';
+        const BACKEND_URL = "http://127.0.0.1:8000";
+
+        function selectMode(mode) {
+            selectedModality = mode;
+            document.querySelectorAll('.wf-btn').forEach(btn => btn.classList.remove('active'));
+            const secBox = document.getElementById('secFileBox');
+            const uploadGrid = document.getElementById('uploadGrid');
+            const viewerContainer = document.getElementById('viewerContainer');
+            const secondaryViewer = document.getElementById('secondaryViewer');
+
+            if(mode === 'single') {
+                document.getElementById('wfSingle').classList.add('active');
+                secBox.style.display = 'none';
+                uploadGrid.classList.remove('two-cols');
+                viewerContainer.classList.remove('dual-mode');
+                secondaryViewer.style.display = 'none';
+            } else {
+                if(mode === 'bi_temporal') {
+                    document.getElementById('wfBi').classList.add('active');
+                    document.getElementById('fileLabel2').innerText = "📁 Select T2 Image (Post-Event)";
+                    document.getElementById('tag2').innerText = "T2 Image (Post-Event)";
+                } else {
+                    document.getElementById('wfCross').classList.add('active');
+                    document.getElementById('fileLabel2').innerText = "📁 Select SAR Image (Radar)";
+                    document.getElementById('tag2').innerText = "SAR Radar Image";
+                }
+                secBox.style.display = 'block';
+                uploadGrid.classList.add('two-cols');
+                viewerContainer.classList.add('dual-mode');
+                secondaryViewer.style.display = 'flex';
+            }
+        }
+
+        document.getElementById('imageInput1').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                document.getElementById('fileLabel1').innerText = `📄 T1: ${file.name}`;
+                const imgObj = document.getElementById('satelliteImage1');
+                imgObj.src = URL.createObjectURL(file);
+                imgObj.onload = () => {
+                    imgObj.style.display = "block";
+                    document.getElementById('placeholderText1').style.display = "none";
+                };
+            }
+        });
+
+        document.getElementById('imageInput2').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                document.getElementById('fileLabel2').innerText = `📄 Sec: ${file.name}`;
+                const imgObj = document.getElementById('satelliteImage2');
+                imgObj.src = URL.createObjectURL(file);
+                imgObj.onload = () => {
+                    imgObj.style.display = "block";
+                    document.getElementById('placeholderText2').style.display = "none";
+                };
+            }
+        });
+
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const fileInput1 = document.getElementById('imageInput1');
+            const fileInput2 = document.getElementById('imageInput2');
+            const statusBadge = document.getElementById('statusBadge');
+
+            if (!fileInput1.files[0]) {
+                alert("Pehle T1 Image upload karein!");
+                return;
+            }
+
+            statusBadge.innerText = "Analyzing... ⏳";
+            statusBadge.style.color = "#f59e0b";
+
+            // Validate Primary Image
+            const valForm = new FormData();
+            valForm.append("file", fileInput1.files[0]);
+            try {
+                const valRes = await fetch(`${BACKEND_URL}/api/v1/validate-image`, { method: 'POST', body: valForm });
+                const valData = await valRes.json();
+                if (!valData.is_valid_map) {
+                    alert(`❌ REJECTED: ${valData.reason}`);
+                    statusBadge.innerText = "Invalid Image ❌";
+                    statusBadge.style.color = "#ef4444";
+                    return;
+                }
+            } catch(err) {
+                alert("⚠️ Backend Server Offline!");
+                return;
+            }
+
+            // Execute Query
+            const agentForm = new FormData();
+            agentForm.append("modality", selectedModality);
+            agentForm.append("file1", fileInput1.files[0]);
+            if (fileInput2.files[0]) agentForm.append("file2", fileInput2.files[0]);
+
+            try {
+                const agentRes = await fetch(`${BACKEND_URL}/api/v1/agent-query`, { method: 'POST', body: agentForm });
+                const agentData = await agentRes.json();
+
+                if (agentData.status === "error") {
+                    alert(`⚠️ ${agentData.message}`);
+                    return;
+                }
+
+                pixelStats = agentData.stats;
+                updateDashboard(pixelStats);
+                imageLoaded = true;
+
+                const history = document.getElementById('chatHistory');
+                history.innerHTML += `<div class="msg assistant">${agentData.summary}</div>`;
+                history.scrollTop = history.scrollHeight;
+
+                statusBadge.innerText = "Complete ✅";
+                statusBadge.style.color = "#10b981";
+
+            } catch (err) {
+                alert("Execution Error!");
+            }
+        });
+
+        // Hybrid Overlay Filter
+        function highlightLayer(layerType) {
+            const img = document.getElementById('satelliteImage1');
+            const canvas = document.getElementById('overlayCanvas1');
+            if (!img.src || img.style.display === "none") return;
+
+            const ctx = canvas.getContext('2d');
+            canvas.width = img.naturalWidth || img.clientWidth;
+            canvas.height = img.naturalHeight || img.clientHeight;
+
+            if (layerType === 'none') {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                return;
+            }
+
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = canvas.width;
+            tempCanvas.height = canvas.height;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+            const imgData = tempCtx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imgData.data;
+
+            for (let i = 0; i < data.length; i += 4) {
+                let r = data[i], g = data[i+1], b = data[i+2];
+
+                // Calculations
+                let max_c = Math.max(r, g, b) / 255.0;
+                let min_c = Math.min(r, g, b) / 255.0;
+                let sat = max_c === 0 ? 0 : (max_c - min_c) / max_c;
+                let val = max_c;
+
+                // Thresholds
+                let isVeg = (g > r + 10 && g > b + 10);
+                let isWater = (b > r + 10 && b > g + 5 && (r + g + b) < 420); // Purana exact water
+                let isBldg = (sat < 0.15 && val > 0.40); // Clean Concrete/Building
+                let isBarren = (r > g && g >= b && (r - b) > 15); // Purana exact barren soil
+
+                if (layerType === 'vegetation' && isVeg) {
+                    data[i] = 16; data[i+1] = 185; data[i+2] = 129; data[i+3] = 220; // Green
+                } else if (layerType === 'buildings' && isBldg) {
+                    data[i] = 255; data[i+1] = 0; data[i+2] = 127; data[i+3] = 230; // Neon Pink Magenta
+                } else if (layerType === 'barren' && isBarren) {
+                    data[i] = 217; data[i+1] = 119; data[i+2] = 6; data[i+3] = 220; // Earthy Brown
+                } else if (layerType === 'water' && isWater) {
+                    data[i] = 6; data[i+1] = 182; data[i+2] = 212; data[i+3] = 220; // Cyan Blue
+                } else {
+                    data[i+3] = 0;
+                }
+            }
+
+            ctx.putImageData(imgData, 0, 0);
+        }
+
+        function initChart(data) {
+            const ctx = document.getElementById('pieChart').getContext('2d');
+            if (pieChartInstance) pieChartInstance.destroy();
+
+            pieChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Vegetation', 'Buildings', 'Barren Soil', 'Water'],
+                    datasets: [{
+                        data: [data.vegetation, data.buildings, data.barren, data.water],
+                        backgroundColor: ['#10b981', '#ff007f', '#d97706', '#06b6d4'],
+                        borderWidth: 2,
+                        borderColor: '#131b2e'
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+        }
+
+        function updateDashboard(sectors) {
+            document.getElementById('pctVeg').innerText = `${sectors.vegetation}%`;
+            document.getElementById('barVeg').style.width = `${sectors.vegetation}%`;
+            document.getElementById('pctBuilding').innerText = `${sectors.buildings}%`;
+            document.getElementById('barBuilding').style.width = `${sectors.buildings}%`;
+            document.getElementById('pctBarren').innerText = `${sectors.barren}%`;
+            document.getElementById('barBarren').style.width = `${sectors.barren}%`;
+            document.getElementById('pctWater').innerText = `${sectors.water}%`;
+            document.getElementById('barWater').style.width = `${sectors.water}%`;
+
+            initChart(sectors);
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const history = document.getElementById('chatHistory');
+            const query = input.value.trim();
+
+            if (!query) return;
+
+            history.innerHTML += `<div class="msg user">${query}</div>`;
+            input.value = '';
+
+            let reply = !imageLoaded ? 
+                "⚠️ Pehle image upload karke **Execute Agent Analysis** dabayein." : 
+                `<strong>🛰️ Active Region Summary:</strong><br>- Vegetation: ${pixelStats.vegetation}%<br>- Buildings: ${pixelStats.buildings}%<br>- Barren Land: ${pixelStats.barren}%<br>- Water: ${pixelStats.water}%`;
+
+            setTimeout(() => {
+                history.innerHTML += `<div class="msg assistant">${reply}</div>`;
+                history.scrollTop = history.scrollHeight;
+            }, 300);
+        }
+
+        document.getElementById('chatInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
+        initChart(pixelStats);
+    </script>
+</body>
+</html>
